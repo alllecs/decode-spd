@@ -20,6 +20,16 @@ char *sdram_voltage_interface_level[] = {
 	"SSTL 1.8V"
 };
 
+char *ddr2_module_types[] = {
+	"RDIMM (133.35 mm)",
+	"UDIMM (133.25 mm)",
+	"SO-DIMM (67.6 mm)",
+	"Micro-DIMM (45.5 mm)",
+	"Mini-RDIMM (82.0 mm)",
+	"Mini-UDIMM (82.0 mm)"
+};
+
+
 char *size[] = {
 	"1 GiB",
 	"2 GiB",
@@ -121,6 +131,8 @@ void dump(uint8_t *addr, int len)
 int main (int argc, char *argv[])
 {
 	int i;
+//	int taa, trcd, trp, tras;
+//	int mtb, ftb, ctime;
 	FILE *fp;
 	uint8_t record[256];
 
@@ -182,7 +194,7 @@ int main (int argc, char *argv[])
 	printf("Ranks\t\t\t\t\t\t %d\n", (record[5] & 0x7) + 1);
 	printf("SDRAM Device Width\t\t\t\t %d bits\n", record[13]);
 	printf("Module Height\t\t\t\t\t %s mm\n", heights[record[5] >> 5]);
-	printf("#Module Type\t\t\t\t\t \n" );
+	printf("Module Type\t\t\t\t\t %s\n", ddr2_module_types[record[20] & 0x3f]);
 	printf("DRAM Package\t\t\t\t\t ");
 	if ((record[5] & 0x10) == 1) {
 		printf("Stack\n");
@@ -213,8 +225,17 @@ int main (int argc, char *argv[])
 	}
 	printf("Refresh Rate\t\t\t\t\t Reduced (%s us) %s\n", refresh[record[12] & 0x7f], ref);
 	printf("Supported Burst Lengths\t\t\t\t %d, %d\n", record[16] & 4, record[16] & 8);
-	printf("#tCL-tRCD-tRP-tRAS\t\t\t\t \n" );
-	printf("#Supported CAS Latencies (tCL)\t\t\t \n" );
+
+/*	mtb = record[10] / record[11];
+	ftb = (record[9] >> 4) / (record[9] & 0x0f);
+	ctime = record[12] * record[34] + mtb * ftb / 1000;
+	taa = record[16] * record[35] + mtb * ftb / 1000;
+	trcd = record[18] * record[36] + mtb * ftb / 1000;
+	trp = record[20] * record[37] + mtb * ftb / 1000;
+	tras = (((record[21] & 0x0f)) + record[22]) * mtb;
+
+	printf("#tCL-tRCD-tRP-tRAS\t\t\t\t %d-%d-%d-%d\n", taa /ctime, trcd, trp, tras );
+*/	printf("#Supported CAS Latencies (tCL)\t\t\t \n" );
 	printf("#Minimum Cycle Time\t\t\t\t \n" );
 	printf("#Maximum Access Time\t\t\t\t\n" );
 	printf("Maximum Cycle Time (tCK max)\t\t\t %0.2lf ns\n", (record[43] >> 4) * 1.0 + (record[43] & 0x0f) * 0.1);
