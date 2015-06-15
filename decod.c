@@ -155,13 +155,13 @@ int main (int argc, char *argv[])
 	printf("\n");
 
 	printf("---=== Memory Characteristics ===---\n");
-	printf("#Maximum module speed\t\t\t\t d MHz (PC2-d)\n");
+	printf("#Maximum module speed\t\t\t\t \n");
 	printf("Size\t\t\t\t\t\t %s \n", size[record[31]] );
 	printf("Banks x Rows x Columns x Bits\t\t\t %d x %d x %d x %d\n", record[17], record[3], record[4], record[6]);
 	printf("Ranks\t\t\t\t\t\t %d\n", (record[5] & 0x7) + 1);
 	printf("SDRAM Device Width\t\t\t\t %d bits\n", record[13]);
 	printf("Module Height\t\t\t\t\t %s mm\n", heights[record[5] >> 5]);
-	printf("#Module Type\t\t\t\t\t SO-DIMM (67.6 mm)\n" );
+	printf("#Module Type\t\t\t\t\t \n" );
 	printf("DRAM Package\t\t\t\t\t ");
 	if ((record[5] & 0x10) == 1) {
 		printf("Stack\n");
@@ -169,13 +169,13 @@ int main (int argc, char *argv[])
 		printf("Planar\n");
 	}
 	printf("Voltage Interface Level\t\t\t\t %s\n", sdram_voltage_interface_level[record[8]]);
-	printf("#Module Configuration Type\t\t\t s\n" );
+	printf("#Module Configuration Type\t\t\t \n" );
 	printf("Refresh Rate\t\t\t\t\t Reduced (%0.2lf us) - Self Refresh\n", record[12] * 0.1);
 	printf("Supported Burst Lengths\t\t\t\t %d, %d\n", record[16] & 4, record[16] & 8);
-	printf("#tCL-tRCD-tRP-tRAS\t\t\t\t 6-6-6-18\n" );
-	printf("#Supported CAS Latencies (tCL)\t\t\t 6T, 5T, 4T\n" );
-	printf("#Minimum Cycle Time\t\t\t\t 2.50 ns at CAS 6 (tCK min)\n\t\t\t\t\t\t 3.00 ns at CAS 5\n\t\t\t\t\t\t 3.75 ns at CAS 4\n" );
-	printf("#Maximum Access Time\t\t\t\t 0.40 ns at CAS 6 (tAC)\n\t\t\t\t\t\t 0.45 ns at CAS 5\n\t\t\t\t\t\t 0.50 ns at CAS 4\n" );
+	printf("#tCL-tRCD-tRP-tRAS\t\t\t\t \n" );
+	printf("#Supported CAS Latencies (tCL)\t\t\t \n" );
+	printf("#Minimum Cycle Time\t\t\t\t \n" );
+	printf("#Maximum Access Time\t\t\t\t\n" );
 	printf("Maximum Cycle Time (tCK max)\t\t\t %0.2lf ns\n", (record[43] >> 4) * 1.0 + (record[43] & 0x0f) * 0.1);
 
 
