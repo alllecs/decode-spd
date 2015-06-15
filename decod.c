@@ -152,9 +152,7 @@ int main (int argc, char *argv[])
 
 	printf("SPD Revision\t\t\t\t\t %x.%x\n", record[62] >> 4, record[62] & 0x0f);
 
-	printf("\n");
-
-	printf("---=== Memory Characteristics ===---\n");
+	printf("\n---=== Memory Characteristics ===---\n");
 	printf("#Maximum module speed\t\t\t\t \n");
 	printf("Size\t\t\t\t\t\t %s \n", size[record[31]] );
 	printf("Banks x Rows x Columns x Bits\t\t\t %d x %d x %d x %d\n", record[17], record[3], record[4], record[6]);
@@ -178,12 +176,7 @@ int main (int argc, char *argv[])
 	printf("#Maximum Access Time\t\t\t\t\n" );
 	printf("Maximum Cycle Time (tCK max)\t\t\t %0.2lf ns\n", (record[43] >> 4) * 1.0 + (record[43] & 0x0f) * 0.1);
 
-
-
-
-	printf("\n");
-
-	printf("---=== Timing Parameters ===---\n");
+	printf("\n---=== Timing Parameters ===---\n");
 	printf("Address/Command Setup Time Before Clock (tIS)\t %0.2lf ns\n", ((record[32] >> 4) * 0.1 + (record[32] & 0xf) * 0.01));
 	printf("Address/Command Hold Time After Clock (tIH)\t %0.2lf ns\n", ((record[33] >> 4) * 0.1 + (record[33] & 0xf) * 0.01));
 	printf("Data Input Setup Time Before Strobe (tDS)\t %0.2lf ns\n", ((record[34] >> 4) * 0.1 + (record[34] & 0xf) * 0.01));
@@ -202,12 +195,7 @@ int main (int argc, char *argv[])
 	printf("Maximum DQS to DQ Skew (tDQSQ)\t\t\t %0.2lf ns\n", record[44] * 0.01);
 	printf("Maximum Read Data Hold Skew (tQHS)\t\t %0.2lf ns\n", record[45] * 0.01);
 
-
-
-
-
-	printf("\n");
-	printf("---=== Manufacturing Information ===---\n");
+	printf("\n---=== Manufacturing Information ===---\n");
 
 	printf("Manufacturer JEDEC ID\t\t\t\t");
 	for (i = 64; i < 72; i++) {
