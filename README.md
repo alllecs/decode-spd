@@ -1,8 +1,13 @@
-#Декодер. Компилировать с -lm.
+#Декодер. 
+
+Decoding EEPROM:
+
 ---=== SPD EEPROM Information ===---
- of bytes written to SDRAM EEPROM              128
-Total number of bytes in EEPROM                 256
-Fundamental Memory type                         DDR2 SDRAM
-SPD Revision                                    1.2
 
+---=== Memory Characteristics ===---
 
+---=== Timing Parameters ===---
+
+---=== Manufacturing Information ===---
+
+Number of SDRAM DIMMs detected and decoded:
