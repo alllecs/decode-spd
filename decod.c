@@ -2,6 +2,35 @@
 #include <stdio.h>
 #include <stdint.h>
 
+char *heights[] = {
+	"<25.4",
+	"25.4",
+	"25.4 - 30.0",
+	"30.0",
+	"30.5",
+	"> 30.5"
+};
+
+char *sdram_voltage_interface_level[] = {
+	"TTL (5V tolerant)",
+	"LVTTL (not 5V tolerant)",
+	"HSTL 1.5V",
+	"SSTL 3.3V",
+	"SSTL 2.5V",
+	"SSTL 1.8V"
+};
+
+char *size[] = {
+	"1 GiB",
+	"2 GiB",
+	"4 GiB",
+	"8 GiB",
+	"16 GiB",
+	"128 MiB",
+	"256 MiB",
+	"512 MiB"
+};
+
 char *vendors[] = {
  "Cirrus Logic", "National Instruments", "ILC Data Device", "Alcatel Mietec",
  "Micro Linear", "Univ. of NC", "JTAG Technologies", "BAE Systems",
@@ -104,22 +133,53 @@ int main (int argc, char *argv[])
 
 	dump(&record[0], 256);
 
+	printf("Decoding EEPROM: %s\n\n", argv[1]);
+
 
 	printf("---=== SPD EEPROM Information ===---\n");
 
-	printf("EEPROM Checksum of bytes 0-62\t\t OK (0x%0X)\n", record[63]);
+	printf("EEPROM Checksum of bytes 0-62\t\t\t OK (0x%0X)\n", record[63]);
 
-	printf("# of bytes written to SDRAM EEPROM\t %d\n", record[0]);
+	printf("# of bytes written to SDRAM EEPROM\t\t %d\n", record[0]);
 	
-	printf("Total number of bytes in EEPROM\t\t %d\n", 1 << record[1]);
+	printf("Total number of bytes in EEPROM\t\t\t %d\n", 1 << record[1]);
 
 	if (record[2] < 11) {
-		printf("Fundamental Memory type\t\t\t %s\n", type_list[record[2]]);
+		printf("Fundamental Memory type\t\t\t\t %s\n", type_list[record[2]]);
 	} else {
 		printf("Warning: unknown memory type (%02x)\n", record[2]);
 	}
 
-	printf("SPD Revision\t\t\t\t %x.%x\n", record[62] >> 4, record[62] & 0x0f);
+	printf("SPD Revision\t\t\t\t\t %x.%x\n", record[62] >> 4, record[62] & 0x0f);
+
+	printf("\n");
+
+	printf("---=== Memory Characteristics ===---\n");
+	printf("#Maximum module speed\t\t\t\t d MHz (PC2-d)\n");
+	printf("Size\t\t\t\t\t\t %s \n", size[record[31]] );
+	printf("Banks x Rows x Columns x Bits\t\t\t %d x %d x %d x %d\n", record[17], record[3], record[4], record[6]);
+	printf("Ranks\t\t\t\t\t\t %d\n", (record[5] & 0x7) + 1);
+	printf("SDRAM Device Width\t\t\t\t %d bits\n", record[13]);
+	printf("Module Height\t\t\t\t\t %s mm\n", heights[record[5] >> 5]);
+	printf("#Module Type\t\t\t\t\t SO-DIMM (67.6 mm)\n" );
+	printf("DRAM Package\t\t\t\t\t ");
+	if ((record[5] & 0x10) == 1) {
+		printf("Stack\n");
+	} else {
+		printf("Planar\n");
+	}
+	printf("Voltage Interface Level\t\t\t\t %s\n", sdram_voltage_interface_level[record[8]]);
+	printf("#Module Configuration Type\t\t\t s\n" );
+	printf("Refresh Rate\t\t\t\t\t Reduced (%0.2lf us) - Self Refresh\n", record[12] * 0.1);
+	printf("Supported Burst Lengths\t\t\t\t %d, %d\n", record[16] & 4, record[16] & 8);
+	printf("#tCL-tRCD-tRP-tRAS\t\t\t\t 6-6-6-18\n" );
+	printf("#Supported CAS Latencies (tCL)\t\t\t 6T, 5T, 4T\n" );
+	printf("#Minimum Cycle Time\t\t\t\t 2.50 ns at CAS 6 (tCK min)\n\t\t\t\t\t\t 3.00 ns at CAS 5\n\t\t\t\t\t\t 3.75 ns at CAS 4\n" );
+	printf("#Maximum Access Time\t\t\t\t 0.40 ns at CAS 6 (tAC)\n\t\t\t\t\t\t 0.45 ns at CAS 5\n\t\t\t\t\t\t 0.50 ns at CAS 4\n" );
+	printf("Maximum Cycle Time (tCK max)\t\t\t %0.2lf ns\n", (record[43] >> 4) * 1.0 + (record[43] & 0x0f) * 0.1);
+
+
+
 
 	printf("\n");
 
@@ -129,18 +189,18 @@ int main (int argc, char *argv[])
 	printf("Data Input Setup Time Before Strobe (tDS)\t %0.2lf ns\n", ((record[34] >> 4) * 0.1 + (record[34] & 0xf) * 0.01));
 	printf("Data Input Hold Time After Strobe (tDH)\t\t %0.2lf ns\n", ((record[35] >> 4) * 0.1 + (record[35] & 0xf) * 0.01));
 
-	printf("Minimum Row Precharge Delay (tRP)\t\t %0.2lf ns\n", (record[27] & 0xfc) / 4 * 1.0);
-	printf("Minimum Row Active to Row Active Delay (tRRD)\t %0.2lf ns\n", (record[28] & 0xfc) / 4 * 1.0);
-	printf("Minimum RAS# to CAS# Delay (tRCD)\t\t %0.2lf ns\n", (record[29] & 0xfc) / 4 * 1.0);
-	printf("Minimum RAS# Pulse Width (tRAS)\t\t\t %0.2lf ns\n", (record[30] & 0xfc) * 1.0);
+	printf("Minimum Row Precharge Delay (tRP)\t\t %0.2lf ns\n", (record[27] & 0xfc) / 4.0);
+	printf("Minimum Row Active to Row Active Delay (tRRD)\t %0.2lf ns\n", record[28] / 4.0);
+	printf("Minimum RAS# to CAS# Delay (tRCD)\t\t %0.2lf ns\n", (record[29] & 0xfc) / 4.0);
+	printf("Minimum RAS# Pulse Width (tRAS)\t\t\t %0.2lf ns\n", (record[30] & 0xfc) + (record[30] & 0x3) * 1.0);
 
-	printf("Write Recovery Time (tWR)\t\t\t %d ns\n", record[36] );
-	printf("Minimum Write to Read CMD Delay (tWTR)\t\t %d ns\n", record[37]);
-	printf("Minimum Read to Pre-charge CMD Delay (tRTP)\t %d ns\n", record[38]);
-	printf("Minimum Active to Auto-refresh Delay (tRC)\t %d ns\n", record[41]);
-	printf("Minimum Recovery Delay (tRFC)\t\t\t %d ns\n", record[42]);
-	printf("Maximum DQS to DQ Skew (tDQSQ)\t\t\t %d ns\n", record[44] / 100);
-	printf("Maximum Read Data Hold Skew (tQHS)\t\t %d ns\n", record[45]);
+	printf("Write Recovery Time (tWR)\t\t\t %0.2lf ns\n", record[36] / 4.0);
+	printf("Minimum Write to Read CMD Delay (tWTR)\t\t %0.2lf ns\n", record[37] / 4.0);
+	printf("Minimum Read to Pre-charge CMD Delay (tRTP)\t %0.2lf ns\n", record[38] / 4.0);
+	printf("Minimum Active to Auto-refresh Delay (tRC)\t %0.2lf ns\n", record[41] * 1.0);
+	printf("Minimum Recovery Delay (tRFC)\t\t\t %0.2lf ns\n", record[42] * 1.0);
+	printf("Maximum DQS to DQ Skew (tDQSQ)\t\t\t %0.2lf ns\n", record[44] * 0.01);
+	printf("Maximum Read Data Hold Skew (tQHS)\t\t %0.2lf ns\n", record[45] * 0.01);
 
 
 
@@ -149,19 +209,20 @@ int main (int argc, char *argv[])
 	printf("\n");
 	printf("---=== Manufacturing Information ===---\n");
 
-	printf("Manufacturer JEDEC ID\t\t\t");
+	printf("Manufacturer JEDEC ID\t\t\t\t");
 	for (i = 64; i < 72; i++) {
 		printf(" %02x", record[i]);
 	}
 	printf("\n");
-	printf("Manufacturing Location Code\t\t 0x%02x\n", record[72]);
+	printf("Manufacturing Location Code\t\t\t 0x%02x\n", record[72]);
 	printf("Part Number\n");
-	printf("Manufacturing Date\t\t\t 20%d-W%d\n", record[93], record[94]);
-	printf("Assembly Serial Number\t\t\t 0x");
+	printf("Manufacturing Date\t\t\t\t 20%d-W%d\n", record[93], record[94]);
+	printf("Assembly Serial Number\t\t\t\t 0x");
 	for (i = 95; i < 99; i++) {
 		printf("%02X", record[i]);
 	}
-	printf("\n");
+
+	printf("\n\n\nNumber of SDRAM DIMMs detected and decoded: %d\n", argc - 1);
 
 	return 0;
 }
