@@ -65,6 +65,14 @@ char *vendors[] = {
  "Acbel Polytech Inc.", "Apacer Technology", "Admor Memory", "FOXCONN",
  "Quadratics Superconductor", "3COM"};
 
+char *refresh[] = {
+	"15.625",
+	"3.9",
+	"7.8",
+	"31.3",
+	"62.5",
+	"125"
+};
 
 char *type_list[] = {
 	"Reserved",
@@ -153,7 +161,22 @@ int main (int argc, char *argv[])
 	printf("SPD Revision\t\t\t\t\t %x.%x\n", record[62] >> 4, record[62] & 0x0f);
 
 	printf("\n---=== Memory Characteristics ===---\n");
-	printf("#Maximum module speed\t\t\t\t \n");
+
+	int ddrclk, tbits, pcclk;
+	double ctime;
+	ctime = (record[9] >> 4) + (record[9] & 0xf) * 0.1;
+	ddrclk = 2 * (1000 / ctime);
+	tbits = (record[7] * 256) + record[6];
+	if ((record[11] == 2) || (record[11] == 1)) {
+		tbits = tbits - 8;
+	}
+	pcclk = ddrclk * tbits / 8;
+	if ((pcclk % 100) >= 50) {
+		pcclk += 100;
+		pcclk = pcclk - (pcclk % 100);
+	}
+	printf("Maximum module speed\t\t\t\t %d MHz (PC-%d)\n", ddrclk, pcclk);
+
 	printf("Size\t\t\t\t\t\t %s \n", size[record[31]] );
 	printf("Banks x Rows x Columns x Bits\t\t\t %d x %d x %d x %d\n", record[17], record[3], record[4], record[6]);
 	printf("Ranks\t\t\t\t\t\t %d\n", (record[5] & 0x7) + 1);
@@ -167,8 +190,28 @@ int main (int argc, char *argv[])
 		printf("Planar\n");
 	}
 	printf("Voltage Interface Level\t\t\t\t %s\n", sdram_voltage_interface_level[record[8]]);
-	printf("#Module Configuration Type\t\t\t \n" );
-	printf("Refresh Rate\t\t\t\t\t Reduced (%0.2lf us) - Self Refresh\n", record[12] * 0.1);
+
+	printf("Module Configuration Type\t\t\t ");
+	if ((record[11] & 0x07) == 0) {
+		printf("No Parity\n");
+	}
+	if (((record[11] & 0x07) & 0x03) == 0x01) {
+		printf("Data Parity\n");
+	}
+	if (((record[11] & 0x07) & 0x02) == 0x01) {
+		printf("Data ECC\n");
+	}
+	if (((record[11] & 0x07) & 0x04) == 0x01) {
+                printf("Address/Command Parity\n");
+        }
+
+	char *ref;
+	if ((record[12] >> 7) == 1) {
+		ref = "- Self Refresh";
+	} else {
+		ref = " ";
+	}
+	printf("Refresh Rate\t\t\t\t\t Reduced (%s us) %s\n", refresh[record[12] & 0x7f], ref);
 	printf("Supported Burst Lengths\t\t\t\t %d, %d\n", record[16] & 4, record[16] & 8);
 	printf("#tCL-tRCD-tRP-tRAS\t\t\t\t \n" );
 	printf("#Supported CAS Latencies (tCL)\t\t\t \n" );
