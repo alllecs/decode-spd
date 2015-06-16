@@ -2,6 +2,36 @@
 #include <stdio.h>
 #include <stdint.h>
 
+static inline int fls(int x)
+{
+       int r = 32;
+ 
+        if (!x)
+                return 0;
+         if (!(x & 0xffff0000u)) {
+                x <<= 16;
+                r -= 16;
+        }
+        if (!(x & 0xff000000u)) {
+                x <<= 8;
+                r -= 8;
+        }
+        if (!(x & 0xf0000000u)) {
+                x <<= 4;
+                r -= 4;
+        }
+        if (!(x & 0xc0000000u)) {
+                x <<= 2;
+                r -= 2;
+        }
+        if (!(x & 0x80000000u)) {
+                x <<= 1;
+                r -= 1;
+        }
+        return r;
+}
+
+
 char *heights[] = {
 	"<25.4",
 	"25.4",
@@ -28,6 +58,7 @@ char *ddr2_module_types[] = {
 	"Mini-RDIMM (82.0 mm)",
 	"Mini-UDIMM (82.0 mm)"
 };
+
 
 
 char *size[] = {
@@ -128,13 +159,36 @@ void dump(uint8_t *addr, int len)
 	printf("\n");
 }
 
+double ddr2_sdram_ctime(uint8_t byte)
+{
+	double ctime;
+
+	ctime = byte >> 4;
+	if ((byte & 0xf) <= 9) {
+		ctime += (byte & 0xf) * 0.1;
+	} else if ((byte & 0xf) == 10) {
+		ctime += 0.25;
+	} else if ((byte & 0xf) == 11) {
+		ctime += 0.33;
+	} else if ((byte & 0xf) == 12) {
+		ctime += 0.66;
+	} else if ((byte & 0xf) == 13) {
+		ctime += 0.75;
+	}
+	return ctime;
+}
+
 int main (int argc, char *argv[])
 {
 	int i;
+	int ddrclk, tbits, pcclk;
+	int trcd, trp, tras;
+	double ctime;
 //	int taa, trcd, trp, tras;
 //	int mtb, ftb, ctime;
 	FILE *fp;
 	uint8_t record[256];
+	char *ref;
 
 	if (argc != 2) {
 		printf("Отсутствует или указано больше 1 аргумента\n");
@@ -174,27 +228,22 @@ int main (int argc, char *argv[])
 
 	printf("\n---=== Memory Characteristics ===---\n");
 
-	int ddrclk, tbits, pcclk;
-	double ctime;
-	ctime = (record[9] >> 4) + (record[9] & 0xf) * 0.1;
+	ctime = ddr2_sdram_ctime(record[9]);
 	ddrclk = 2 * (1000 / ctime);
 	tbits = (record[7] * 256) + record[6];
-	if ((record[11] == 2) || (record[11] == 1)) {
+	if ((record[11] & 0x03) == 1) {
 		tbits = tbits - 8;
 	}
 	pcclk = ddrclk * tbits / 8;
-	if ((pcclk % 100) >= 50) {
-		pcclk += 100;
-		pcclk = pcclk - (pcclk % 100);
-	}
-	printf("Maximum module speed\t\t\t\t %d MHz (PC-%d)\n", ddrclk, pcclk);
+	pcclk = pcclk - (pcclk % 100);
+	printf("Maximum module speed\t\t\t\t %d MHz (PC2-%d)\n", ddrclk, pcclk);
 
 	printf("Size\t\t\t\t\t\t %s \n", size[record[31]] );
 	printf("Banks x Rows x Columns x Bits\t\t\t %d x %d x %d x %d\n", record[17], record[3], record[4], record[6]);
 	printf("Ranks\t\t\t\t\t\t %d\n", (record[5] & 0x7) + 1);
 	printf("SDRAM Device Width\t\t\t\t %d bits\n", record[13]);
 	printf("Module Height\t\t\t\t\t %s mm\n", heights[record[5] >> 5]);
-	printf("Module Type\t\t\t\t\t %s\n", ddr2_module_types[record[20] & 0x3f]);
+	printf("Module Type\t\t\t\t\t %s\n", ddr2_module_types[fls(record[20]) - 1]);
 	printf("DRAM Package\t\t\t\t\t ");
 	if ((record[5] & 0x10) == 1) {
 		printf("Stack\n");
@@ -217,7 +266,6 @@ int main (int argc, char *argv[])
                 printf("Address/Command Parity\n");
         }
 
-	char *ref;
 	if ((record[12] >> 7) == 1) {
 		ref = "- Self Refresh";
 	} else {
@@ -225,17 +273,13 @@ int main (int argc, char *argv[])
 	}
 	printf("Refresh Rate\t\t\t\t\t Reduced (%s us) %s\n", refresh[record[12] & 0x7f], ref);
 	printf("Supported Burst Lengths\t\t\t\t %d, %d\n", record[16] & 4, record[16] & 8);
+	printf("#Supported CAS Latencies (tCL)\t\t\t \n" );
 
-/*	mtb = record[10] / record[11];
-	ftb = (record[9] >> 4) / (record[9] & 0x0f);
-	ctime = record[12] * record[34] + mtb * ftb / 1000;
-	taa = record[16] * record[35] + mtb * ftb / 1000;
-	trcd = record[18] * record[36] + mtb * ftb / 1000;
-	trp = record[20] * record[37] + mtb * ftb / 1000;
-	tras = (((record[21] & 0x0f)) + record[22]) * mtb;
+	trcd = ((record[29] >> 2) + ((record[29] & 3) * 0.25)) / ctime;
+	trp = ((record[27] >> 2) + ((record[27] & 3) * 0.25)) / ctime;
+	tras = record[30] / ctime;
 
-	printf("#tCL-tRCD-tRP-tRAS\t\t\t\t %d-%d-%d-%d\n", taa /ctime, trcd, trp, tras );
-*/	printf("#Supported CAS Latencies (tCL)\t\t\t \n" );
+	printf("#tCL-tRCD-tRP-tRAS\t\t\t\t %d-%d-%d-%d as DDR2-%d\n", record[18], trcd, trp, tras, ddrclk);
 	printf("#Minimum Cycle Time\t\t\t\t \n" );
 	printf("#Maximum Access Time\t\t\t\t\n" );
 	printf("Maximum Cycle Time (tCK max)\t\t\t %0.2lf ns\n", (record[43] >> 4) * 1.0 + (record[43] & 0x0f) * 0.1);
