@@ -219,10 +219,10 @@ int main (int argc, char *argv[])
 	if (((record[11] & 0x07) & 0x03) == 0x01) {
 		printf("Data Parity\n");
 	}
-	if (((record[11] & 0x07) & 0x02) == 0x02) {
+	if (((record[11] & 0x07) & 0x02)) {
 		printf("Data ECC\n");
 	}
-	if (((record[11] & 0x07) & 0x04) == 0x04) {
+	if (((record[11] & 0x07) & 0x04)) {
                 printf("Address/Command Parity\n");
         }
 
@@ -244,7 +244,6 @@ int main (int argc, char *argv[])
 			cas[highestCAS]++;
 		}
 	}
-	
 	printf("Supported CAS Latencies (tCL)\t\t\t %dT\n", highestCAS);
 	printf("tCL-tRCD-tRP-tRAS\t\t\t\t %d-%d-%d-%d as DDR2-%d\n", highestCAS, trcd, trp, tras, ddrclk);
 	printf("Minimum Cycle Time\t\t\t\t %0.2lf ns at CAS %d\n", ctime, highestCAS);
