@@ -149,8 +149,6 @@ int main (int argc, char *argv[])
 	int ddrclk, tbits, pcclk;
 	int trcd, trp, tras;
 	double ctime;
-//	int taa, trcd, trp, tras;
-//	int mtb, ftb, ctime;
 	FILE *fp;
 	uint8_t record[256];
 	char *ref;
@@ -191,10 +189,6 @@ int main (int argc, char *argv[])
 	ctime = ddr2_sdram_ctime(record[9]);
 	ddrclk = 2 * (1000 / ctime);
 	tbits = (record[7] << 8) + record[6];
-  /* x << 1  ===  x * 2 */
-  /* x << 2  ===  x * 4 */
-  /* x << 3  ===  x * 8 */
-  /* x << ?? ===  x * 256 */
 	if ((record[11] & 0x03) == 1) {
 		tbits = tbits - 8;
 	}
@@ -207,19 +201,8 @@ int main (int argc, char *argv[])
 	printf("Ranks\t\t\t\t\t\t %d\n", (record[5] & 0x7) + 1);
 	printf("SDRAM Device Width\t\t\t\t %d bits\n", record[13]);
 
-	/* check record[5] */
 	printf("Module Height\t\t\t\t\t %s mm\n", heights[record[5] >> 5]);
 
-/*
-char *heights_f(int code)
-{
-	if (code < ARRAY_SIZE(heights)) {
-		return heights[code];
-	}
-
-	return "unknown height\n";
-}
-*/
 	printf("Module Type\t\t\t\t\t %s\n", ddr2_module_types[fls(record[20]) - 1]);
 	printf("DRAM Package\t\t\t\t\t ");
 	if ((record[5] & 0x10) == 1) {
@@ -236,10 +219,10 @@ char *heights_f(int code)
 	if (((record[11] & 0x07) & 0x03) == 0x01) {
 		printf("Data Parity\n");
 	}
-	if (((record[11] & 0x07) & 0x02) == 0x01) {
+	if (((record[11] & 0x07) & 0x02) == 0x02) {
 		printf("Data ECC\n");
 	}
-	if (((record[11] & 0x07) & 0x04) == 0x01) {
+	if (((record[11] & 0x07) & 0x04) == 0x04) {
                 printf("Address/Command Parity\n");
         }
 
