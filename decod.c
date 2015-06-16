@@ -59,8 +59,6 @@ char *ddr2_module_types[] = {
 	"Mini-UDIMM (82.0 mm)"
 };
 
-
-
 char *size[] = {
 	"1 GiB",
 	"2 GiB",
@@ -71,40 +69,6 @@ char *size[] = {
 	"256 MiB",
 	"512 MiB"
 };
-
-char *vendors[] = {
- "Cirrus Logic", "National Instruments", "ILC Data Device", "Alcatel Mietec",
- "Micro Linear", "Univ. of NC", "JTAG Technologies", "BAE Systems",
- "Nchip", "Galileo Tech", "Bestlink Systems", "Graychip",
- "GENNUM", "VideoLogic", "Robert Bosch", "Chip Express",
- "DATARAM", "United Microelec Corp.", "TCSI", "Smart Modular",
- "Hughes Aircraft", "Lanstar Semiconductor", "Qlogic", "Kingston",
- "Music Semi", "Ericsson Components", "SpaSE", "Eon Silicon Devices",
- "Programmable Micro Corp", "DoD", "Integ. Memories Tech.", "Corollary Inc.",
- "Dallas Semiconductor", "Omnivision", "EIV(Switzerland)", "Novatel Wireless",
- "Zarlink (former Mitel)", "Clearpoint", "Cabletron", "STEC (former Silicon Technology)",
- "Vanguard", "Hagiwara Sys-Com", "Vantis", "Celestica",
- "Century", "Hal Computers", "Rohm Company Ltd.", "Juniper Networks",
- "Libit Signal Processing", "Mushkin Enhanced Memory", "Tundra Semiconductor", "Adaptec Inc.",
- "LightSpeed Semi.", "ZSP Corp.", "AMIC Technology", "Adobe Systems",
- "Dynachip", "PNY Electronics", "Newport Digital", "MMC Networks",
- "T Square", "Seiko Epson", "Broadcom", "Viking Components",
- "V3 Semiconductor", "Flextronics (former Orbit)", "Suwa Electronics", "Transmeta",
- "Micron CMS", "American Computer & Digital Components Inc", "Enhance 3000 Inc", "Tower Semiconductor",
-"CPU Design", "Price Point", "Maxim Integrated Product", "Tellabs",
- "Centaur Technology", "Unigen Corporation", "Transcend Information", "Memory Card Technology",
- "CKD Corporation Ltd.", "Capital Instruments, Inc.", "Aica Kogyo, Ltd.", "Linvex Technology",
- "MSC Vertriebs GmbH", "AKM Company, Ltd.", "Dynamem, Inc.", "NERA ASA",
- "GSI Technology", "Dane-Elec (C Memory)", "Acorn Computers", "Lara Technology",
- "Oak Technology, Inc.", "Itec Memory", "Tanisys Technology", "Truevision",
- "Wintec Industries", "Super PC Memory", "MGV Memory", "Galvantech",
- "Gadzoox Nteworks", "Multi Dimensional Cons.", "GateField", "Integrated Memory System",
- "Triscend", "XaQti", "Goldenram", "Clear Logic",
- "Cimaron Communications", "Nippon Steel Semi. Corp.", "Advantage Memory", "AMCC",
- "LeCroy", "Yamaha Corporation", "Digital Microwave", "NetLogic Microsystems",
- "MIMOS Semiconductor", "Advanced Fibre", "BF Goodrich Data.", "Epigram",
- "Acbel Polytech Inc.", "Apacer Technology", "Admor Memory", "FOXCONN",
- "Quadratics Superconductor", "3COM"};
 
 char *refresh[] = {
 	"15.625",
@@ -130,16 +94,15 @@ char *type_list[] = {
 	"DDR3 SDRAM"
 };
 
-/*void ddr2_sdram_atime(uint8_t *addr)
+double ddr2_sdram_atime(uint8_t addr)
 {
-	int i;
-	float t;
+	double t;
 
 	t = ((addr >> 4) * 0.1 + (addr & 0xf) * 0.01);
 
 	return t;
 }
-*/
+
 void dump(uint8_t *addr, int len)
 {
 	int i;
@@ -180,7 +143,9 @@ double ddr2_sdram_ctime(uint8_t byte)
 
 int main (int argc, char *argv[])
 {
-	int i;
+	int highestCAS = 0;
+	int cas[256];
+	int i, i_i;
 	int ddrclk, tbits, pcclk;
 	int trcd, trp, tras;
 	double ctime;
@@ -209,13 +174,9 @@ int main (int argc, char *argv[])
 
 	printf("Decoding EEPROM: %s\n\n", argv[1]);
 
-
 	printf("---=== SPD EEPROM Information ===---\n");
-
 	printf("EEPROM Checksum of bytes 0-62\t\t\t OK (0x%0X)\n", record[63]);
-
 	printf("# of bytes written to SDRAM EEPROM\t\t %d\n", record[0]);
-	
 	printf("Total number of bytes in EEPROM\t\t\t %d\n", 1 << record[1]);
 
 	if (record[2] < 11) {
@@ -223,14 +184,17 @@ int main (int argc, char *argv[])
 	} else {
 		printf("Warning: unknown memory type (%02x)\n", record[2]);
 	}
-
 	printf("SPD Revision\t\t\t\t\t %x.%x\n", record[62] >> 4, record[62] & 0x0f);
 
 	printf("\n---=== Memory Characteristics ===---\n");
 
 	ctime = ddr2_sdram_ctime(record[9]);
 	ddrclk = 2 * (1000 / ctime);
-	tbits = (record[7] * 256) + record[6];
+	tbits = (record[7] << 8) + record[6];
+  /* x << 1  ===  x * 2 */
+  /* x << 2  ===  x * 4 */
+  /* x << 3  ===  x * 8 */
+  /* x << ?? ===  x * 256 */
 	if ((record[11] & 0x03) == 1) {
 		tbits = tbits - 8;
 	}
@@ -242,7 +206,20 @@ int main (int argc, char *argv[])
 	printf("Banks x Rows x Columns x Bits\t\t\t %d x %d x %d x %d\n", record[17], record[3], record[4], record[6]);
 	printf("Ranks\t\t\t\t\t\t %d\n", (record[5] & 0x7) + 1);
 	printf("SDRAM Device Width\t\t\t\t %d bits\n", record[13]);
+
+	/* check record[5] */
 	printf("Module Height\t\t\t\t\t %s mm\n", heights[record[5] >> 5]);
+
+/*
+char *heights_f(int code)
+{
+	if (code < ARRAY_SIZE(heights)) {
+		return heights[code];
+	}
+
+	return "unknown height\n";
+}
+*/
 	printf("Module Type\t\t\t\t\t %s\n", ddr2_module_types[fls(record[20]) - 1]);
 	printf("DRAM Package\t\t\t\t\t ");
 	if ((record[5] & 0x10) == 1) {
@@ -273,15 +250,22 @@ int main (int argc, char *argv[])
 	}
 	printf("Refresh Rate\t\t\t\t\t Reduced (%s us) %s\n", refresh[record[12] & 0x7f], ref);
 	printf("Supported Burst Lengths\t\t\t\t %d, %d\n", record[16] & 4, record[16] & 8);
-	printf("#Supported CAS Latencies (tCL)\t\t\t \n" );
 
 	trcd = ((record[29] >> 2) + ((record[29] & 3) * 0.25)) / ctime;
 	trp = ((record[27] >> 2) + ((record[27] & 3) * 0.25)) / ctime;
 	tras = record[30] / ctime;
 
-	printf("#tCL-tRCD-tRP-tRAS\t\t\t\t %d-%d-%d-%d as DDR2-%d\n", record[18], trcd, trp, tras, ddrclk);
-	printf("#Minimum Cycle Time\t\t\t\t \n" );
-	printf("#Maximum Access Time\t\t\t\t\n" );
+	for (i_i = 2; i_i < 7; i_i++) {
+		if (record[18] & (1 << i_i)) {
+			highestCAS = i_i;
+			cas[highestCAS]++;
+		}
+	}
+	
+	printf("Supported CAS Latencies (tCL)\t\t\t %dT\n", highestCAS);
+	printf("tCL-tRCD-tRP-tRAS\t\t\t\t %d-%d-%d-%d as DDR2-%d\n", highestCAS, trcd, trp, tras, ddrclk);
+	printf("Minimum Cycle Time\t\t\t\t %0.2lf ns at CAS %d\n", ctime, highestCAS);
+	printf("Maximum Access Time\t\t\t\t %0.2lf ns at CAS %d\n", ddr2_sdram_atime(record[10]), highestCAS);
 	printf("Maximum Cycle Time (tCK max)\t\t\t %0.2lf ns\n", (record[43] >> 4) * 1.0 + (record[43] & 0x0f) * 0.1);
 
 	printf("\n---=== Timing Parameters ===---\n");
