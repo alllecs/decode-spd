@@ -1,0 +1,52 @@
+	Memory Serial Presence Detect Decoder
+	Alexander Smirnov <alllecs@yandex.ru>
+			18/06/2015
+1. Об этом руководстве
+
+Это руководство описывает основные пункты
+для вывода на экран информации из SPD EEPROM
+в удобном для восприятия человеком виде.
+
+Для корректной работы, необходимо 
+выполнять команды с правами root.
+
+2. Установите модуль SPD EEPROM в ПК
+
+3. Установка i2c-tools
+Для установки i2c-tools необходимо выполнить:
+
+  apt-get update
+  apt-get install i2c-tools
+
+4. Загрузить драйвер SPD EEPROM (at24c02)
+Для этого выполнить:
+
+  modprobe eeprom
+
+5. Проверка доступных для чтения микросхем spd EEPROM
+Для этого выполнить:
+
+  ls -la /sys/bus/i2c/devices/*/eeprom
+
+Например, для at24c02 на шине 0 по адресу 50, файл будет: 
+
+  ls -la /sys/bus/i2c/devices/0-0050/eeprom
+
+Получим:
+
+  -r--r--r-- 1 root root 256 Jan 21 17:17 /sys/bus/i2c/devices/0-0050/eeprom
+
+6. Перенос данных в отдельный файл
+Для переноса данных, в файл (например undefined_pc2-3200_ddr2)
+необходимо выполнить:
+
+  /sys/bus/i2c/devices/0-0050/eeprom > undefined_pc2-3200_ddr2
+
+7. Запуск декодера spd
+Для запуска декодера нужно выполнить:
+
+  ./decod имя_файла
+
+Например:
+
+  ./decod undefined_pc2-3200_ddr2
