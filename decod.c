@@ -59,17 +59,6 @@ char *ddr2_module_types[] = {
 	"Mini-UDIMM (82.0 mm)"
 };
 
-char *size[] = {
-	"1 GiB",
-	"2 GiB",
-	"4 GiB",
-	"8 GiB",
-	"16 GiB",
-	"128 MiB",
-	"256 MiB",
-	"512 MiB"
-};
-
 char *refresh[] = {
 	"15.625",
 	"3.9",
