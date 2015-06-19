@@ -94,6 +94,15 @@ char *type_list[] = {
 	"DDR3 SDRAM"
 };
 
+double funct(uint8_t addr)
+{
+	double t;
+
+	t = ((addr >> 4) * 0.1 + (addr & 0xf) * 0.01);
+
+	return t;
+}
+
 double ddr2_sdram_atime(uint8_t addr)
 {
 	double t;
@@ -145,12 +154,13 @@ int main (int argc, char *argv[])
 {
 	int highestCAS = 0;
 	int cas[256];
-	int i, i_i;
+	int i, i_i, k;
 	int ddrclk, tbits, pcclk;
 	int trcd, trp, tras;
 	double ctime;
 	FILE *fp;
 	uint8_t record[256];
+	uint8_t parity;
 	char *ref;
 
 	if (argc != 2) {
@@ -168,7 +178,7 @@ int main (int argc, char *argv[])
 	fread(&record[0], 256, 1, fp);
 	fclose(fp);
 
-	dump(&record[0], 256);
+//	dump(&record[0], 256);
 
 	printf("Decoding EEPROM: %s\n\n", argv[1]);
 
@@ -195,14 +205,23 @@ int main (int argc, char *argv[])
 	pcclk = ddrclk * tbits / 8;
 	pcclk = pcclk - (pcclk % 100);
 	printf("Maximum module speed\t\t\t\t %d MHz (PC2-%d)\n", ddrclk, pcclk);
+	i_i= (record[3] & 0x0f) + (record[4] & 0x0f) - 17;
+	k = ((record[5] & 0x7) + 1) * record[17];
 
-	printf("Size\t\t\t\t\t\t %s \n", size[record[31]] );
+	if (i_i > 0 && i_i <= 12 && k > 0) {
+		printf("Size\t\t\t\t\t\t %d MB\n", ((1 << i_i) * k));
+	} else {
+		printf("Size\t\t\t\t\t\t INVALID: %02x %02x %02x %02x\n", record[3], record[4], record[5], record[17]);
+	}
 	printf("Banks x Rows x Columns x Bits\t\t\t %d x %d x %d x %d\n", record[17], record[3], record[4], record[6]);
 	printf("Ranks\t\t\t\t\t\t %d\n", (record[5] & 0x7) + 1);
 	printf("SDRAM Device Width\t\t\t\t %d bits\n", record[13]);
 
-	printf("Module Height\t\t\t\t\t %s mm\n", heights[record[5] >> 5]);
-
+	if ((record[5] >> 5) < 7) {
+		printf("Module Height\t\t\t\t\t %s mm\n", heights[(record[5] >> 5)]);
+	} else {
+		printf("Error height\n");
+	}
 	printf("Module Type\t\t\t\t\t %s\n", ddr2_module_types[fls(record[20]) - 1]);
 	printf("DRAM Package\t\t\t\t\t ");
 	if ((record[5] & 0x10) == 1) {
@@ -210,19 +229,25 @@ int main (int argc, char *argv[])
 	} else {
 		printf("Planar\n");
 	}
-	printf("Voltage Interface Level\t\t\t\t %s\n", sdram_voltage_interface_level[record[8]]);
+	if (record[8] < 7) {
+		printf("Voltage Interface Level\t\t\t\t %s\n", sdram_voltage_interface_level[record[8]]);
+	} else {
+		printf("Error Voltage Interface Level\n");
+	}
+	printf("Module Configuration Type \t\t\t ");
 
-	printf("Module Configuration Type\t\t\t ");
-	if ((record[11] & 0x07) == 0) {
+	parity = record[11] & 0x07;
+	
+	if (parity == 0) {
 		printf("No Parity\n");
 	}
-	if (((record[11] & 0x07) & 0x03) == 0x01) {
+	if ((parity & 0x03) == 0x01) {
 		printf("Data Parity\n");
 	}
-	if (((record[11] & 0x07) & 0x02)) {
+	if (parity & 0x02) {
 		printf("Data ECC\n");
 	}
-	if (((record[11] & 0x07) & 0x04)) {
+	if (parity & 0x04) {
                 printf("Address/Command Parity\n");
         }
 
@@ -251,10 +276,10 @@ int main (int argc, char *argv[])
 	printf("Maximum Cycle Time (tCK max)\t\t\t %0.2lf ns\n", (record[43] >> 4) * 1.0 + (record[43] & 0x0f) * 0.1);
 
 	printf("\n---=== Timing Parameters ===---\n");
-	printf("Address/Command Setup Time Before Clock (tIS)\t %0.2lf ns\n", ((record[32] >> 4) * 0.1 + (record[32] & 0xf) * 0.01));
-	printf("Address/Command Hold Time After Clock (tIH)\t %0.2lf ns\n", ((record[33] >> 4) * 0.1 + (record[33] & 0xf) * 0.01));
-	printf("Data Input Setup Time Before Strobe (tDS)\t %0.2lf ns\n", ((record[34] >> 4) * 0.1 + (record[34] & 0xf) * 0.01));
-	printf("Data Input Hold Time After Strobe (tDH)\t\t %0.2lf ns\n", ((record[35] >> 4) * 0.1 + (record[35] & 0xf) * 0.01));
+	printf("Address/Command Setup Time Before Clock (tIS)\t %0.2lf ns\n", funct(record[32]));
+	printf("Address/Command Hold Time After Clock (tIH)\t %0.2lf ns\n", funct(record[33]));
+	printf("Data Input Setup Time Before Strobe (tDS)\t %0.2lf ns\n", funct(record[34]));
+	printf("Data Input Hold Time After Strobe (tDH)\t\t %0.2lf ns\n", funct(record[35]));
 
 	printf("Minimum Row Precharge Delay (tRP)\t\t %0.2lf ns\n", (record[27] & 0xfc) / 4.0);
 	printf("Minimum Row Active to Row Active Delay (tRRD)\t %0.2lf ns\n", record[28] / 4.0);
@@ -276,15 +301,24 @@ int main (int argc, char *argv[])
 		printf(" %02x", record[i]);
 	}
 	printf("\n");
-	printf("Manufacturing Location Code\t\t\t 0x%02x\n", record[72]);
-	printf("Part Number\n");
+	if (record[72]) {
+		printf("Manufacturing Location Code\t\t\t 0x%02x\n", record[72]);
+	}
+	printf("Part Number\t\t\t\t\t ");
+	for (i = 73; i < 91; i++) {
+		if (record[i] >= 32 && record[i] < 127) {
+			printf("%c", record[i]);
+		} else {
+			printf("%d", record[i]);
+		}
+	}
+	printf("\n");
 	printf("Manufacturing Date\t\t\t\t 20%d-W%d\n", record[93], record[94]);
 	printf("Assembly Serial Number\t\t\t\t 0x");
 	for (i = 95; i < 99; i++) {
 		printf("%02X", record[i]);
 	}
-
-	printf("\n\n\nNumber of SDRAM DIMMs detected and decoded: %d\n", argc - 1);
+	printf("\n\n");
 
 	return 0;
 }
