@@ -148,7 +148,7 @@ int main (int argc, char *argv[])
 	int ddrclk, tbits, pcclk;
 	int trcd, trp, tras;
 	double ctime;
-	FILE *fp;
+	int fd;
 	uint8_t record[256];
 	uint8_t parity;
 	char *ref;
@@ -158,17 +158,15 @@ int main (int argc, char *argv[])
 		return 2;
 	}
 
-	fp = fopen(argv[1], "rb");
+	fd = open(argv[1], O_RDONLY);
 
-	if (fp == NULL) {
+	if (fd == NULL) {
 		perror("Ошибка при работе с файлом");
 		return 3;
 	}
 
-	fread(&record[0], 256, 1, fp);
-	fclose(fp);
-
-//	dump(&record[0], 256);
+	read(fd, &record[0], 256);
+	close(fd);
 
 	printf("Decoding EEPROM: %s\n\n", argv[1]);
 
