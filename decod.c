@@ -154,14 +154,14 @@ int main (int argc, char *argv[])
 	char *ref;
 
 	if (argc != 2) {
-		printf("Отсутствует или указано больше 1 аргумента\n");
+		printf("Not enough or more than one arguments to continue\n");
 		return 2;
 	}
 
 	fd = open(argv[1], O_RDONLY);
 
 	if (fd == NULL) {
-		perror("Ошибка при работе с файлом");
+		perror("Error open file");
 		return 3;
 	}
 
