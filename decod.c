@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#ifndef __BAREBOX__
 static inline int fls(int x)
 {
        int r = 32;
@@ -30,7 +31,7 @@ static inline int fls(int x)
         }
         return r;
 }
-
+#endif
 
 char *heights[] = {
 	"<25.4",
