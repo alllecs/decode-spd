@@ -13,7 +13,7 @@
 2. Установите модуль SPD EEPROM в ПК
 
 3. Установка i2c-tools
-Для установки i2c-tools необходимо выполнить:
+Для установки i2c-tools на ПК необходимо выполнить:
 
   apt-get update
   apt-get install i2c-tools
