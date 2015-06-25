@@ -1,0 +1,34 @@
+           BAREBOX SUBMITTING PATCH HOWTO
+	Alexander Smirnov <alllecs@yandex.ru>
+		24/06/2015
+
+Об этом руководстве
+
+Это руководство описывает основные действия
+для отправки патчей barebox для их последующего
+включения в официальный git-репозиторий.
+
+1. git commit -s
+
+2. git log --stat --pretty=short
+
+3. git rebase -i <old commit sha1>^
+
+В открывшимся окне перенести новый коммит под старый.
+После чего поменять "pick" перед новым коммитом на "f".
+Например:
+
+  f (new commit)
+
+4. git format-patch --stat --cover-letter HEAD^^^
+ --subject-prefix="RFC V2"
+
+4.5 ./scripts/checkpatch.pl 000*.patch
+
+5. vim 0000-cover-letter.patch
+
+6. git send-email --to "maintainer" --cc "mail-list" *.patch
+
+Например:
+
+  git send-email --to "Sascha Hauer <s.hauer@pengutronix.de>" --cc barebox@lists.infradead.org *.patch
