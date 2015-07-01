@@ -23,11 +23,22 @@
 4. git format-patch --stat --cover-letter HEAD^^^
  --subject-prefix="RFC V2"
 
-4.5 ./scripts/checkpatch.pl 000*.patch
+(если коммит один и в истории, то сделать можно так:
+git format-patch --stat bc5092d785d0c80e9c59ff68c4ab9d9d59c51ff7 -1)
+
+(если нужно пропустить последний коммит, то можно так:
+git format-patch --stat --cover-letter HEAD^^^^..HEAD^
+ --subject-prefix="RFC V2")
+
+4.5 Проверка патча на ошибки.
+Для этого выполните:
+./scripts/checkpatch.pl 000*.patch
 
 5. vim 0000-cover-letter.patch
 
-6. git send-email --to "maintainer" --cc "mail-list" *.patch
+6. Написание subject в 0000-cover-letter.patch
+
+7. git send-email --to "maintainer" --cc "mail-list" *.patch
 
 Например:
 
